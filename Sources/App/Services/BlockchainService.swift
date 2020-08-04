@@ -15,6 +15,28 @@ class BlockchainService {
         self.blockchain = Blockchain(genesisBlock: Block())
     }
     
+    func resolve(completion: @escaping (Blockchain) -> ()) {
+        let nodes = self.blockchain.nodes
+        for node in nodes {
+            let url = URL(string: "\(node.address)/blockchain")!
+            
+            URLSession.shared.dataTask(with: url){ data, _, _ in
+                
+                if let data = data {
+                    let blockchain = try! JSONDecoder().decode(Blockchain.self, from: data)
+                
+                    if self.blockchain.blocks.count > blockchain.blocks.count {
+                        completion(self.blockchain)
+                    }else{
+                        self.blockchain = blockchain
+                        completion(blockchain)
+                    }
+                }
+                
+            }.resume()
+        }
+    }
+    
     func getNodes() -> [BlockchainNode]{
         return self.blockchain.nodes
     }
